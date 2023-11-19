@@ -20,7 +20,7 @@ resource "aws_internet_gateway" "internet_gateway" {
 
 # EIP for NAT
 resource "aws_eip" "nat_eip" {
-  vpc        = true
+  vpc = true
   depends_on = [aws_internet_gateway.internet_gateway]
 }
 
@@ -138,7 +138,7 @@ resource "random_string" "password" {
 
 
 resource "aws_db_subnet_group" "rdssng" {
-  name       = "main"
+  name       = "rds_sg"
   subnet_ids = aws_subnet.private_subnet[*].id
 
   tags = {

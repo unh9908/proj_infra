@@ -1,5 +1,6 @@
 provider "aws" {
   region = local.region
+  profile = "default"
 }
 
 module "Networking" {
@@ -12,13 +13,21 @@ module "Networking" {
   vpc_tags                   = local.tags
 }
 
-module "Jumpserver" {
-  source = "../../module/jumpserver"
+module "ec2" {
+  source = "../../module/ec2"
   vpc_id = module.Networking.vpc_id
   public_subnets_id = module.Networking.public_subnets_id
   security_group_ids = module.Networking.security_groups_ids
 
 }
+
+# module "Jumpserver" {
+#   source = "../../module/jumpserver"
+#   vpc_id = module.Networking.vpc_id
+#   public_subnets_id = module.Networking.public_subnets_id
+#   security_group_ids = module.Networking.security_groups_ids
+
+# }
 
 /*resource "random_string" "password" {
   length  = 32

@@ -29,6 +29,6 @@ variable "shared_tags" {
   default     = {}
 }
 
-variable "PUBLIC_KEY_PATH" {
-  default = "jumpkey.pub"
-}
+# variable "PUBLIC_KEY_PATH" {
+#   default = "jumpkey.pub"
+# }

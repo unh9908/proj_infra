@@ -1,8 +1,12 @@
 # Define a s3 bucket to store terraform state file.
+provider "aws" {
+  region = local.region
+  profile = "default"
+}
 resource "aws_s3_bucket" "terraform_state" {
   //NOTE: make sure the bucket name is global unique, otherwise the creation fails.
   bucket        = format("comp851-terraform-state-%s", local.region)
-  force_destroy = false
+  force_destroy = true
   lifecycle {
     ignore_changes = [bucket]
   }
