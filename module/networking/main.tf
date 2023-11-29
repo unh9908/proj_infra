@@ -138,7 +138,7 @@ resource "random_string" "password" {
 
 
 resource "aws_db_subnet_group" "rdssng" {
-  name       = "rds_sg"
+  name       = "comp851-rds_sg"
   subnet_ids = aws_subnet.private_subnet[*].id
 
   tags = {
