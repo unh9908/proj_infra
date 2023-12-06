@@ -28,10 +28,10 @@ terraform apply  (confirm the prompt by typing "yes")
 
 **Now we create other resources a new vpc, jumpserver and rds instance**
 
-- cd into networking directory and open main.tf file, replace "comp-851" with your unh username in "comp851-rds_sg" and in bucket name "comp851-datamigration"
+- cd into networking directory and open main.tf file, replace "comp-851" with your unh username in "comp851-rds_sg"    
 - Now cd into region/virgina directory change the s3 bucket name (replace comp851 with your username as you did before and make sure that the bucket name matches with the previously created bucket in S3) in providers.tf file at the bottom in backend "s3" section and save.   
 - Create public and private key pair using "ssh-keygen -f jump-server" command.    
-- Open main.tf file in "ec2" directory and replace the value of public_key with the value from "proj_infra/module/virginia/jump-server.pub" file and also update key_name by appending your username to the existing value in both aws_instance and aws_key_pair resources.
+- Open main.tf file in "ec2" directory and replace the value of public_key with the value from "proj_infra/module/virginia/jump-server.pub" file.
 - Now navigate back to region/virginia and open main.tf file, update vpc name by replacing "comp851" with your username in "comp851-VPC".
 
 - Execute below commands from virginia directory
