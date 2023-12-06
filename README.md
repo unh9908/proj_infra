@@ -74,6 +74,20 @@ conda --version
 
 # AWS Tutorial with Boto3, AWS CLI, and Python
 
+## Note: 
+
+for quickly searching your command history for commands you've executed use `ctrl + r` and start typing the command. You will be repeating things quite a bit. 
+Strongly recommended to also save: names, ARNs, and IDs of things you create in a text file of just generally useful information. 
+
+If you see anything in angle brackets: <> or square brackets [], that is generic place-holder things that need to be tailored to **YOUR** implementation. 
+Do not just replace the text inside the angle brackets or square brackets. 
+
+I recommend also prefixing all of the resources created in this guide with the `aws cli` commands, are prefxied with your unh-username. 
+When you go to tear down all of your lambda functions at the end, and destroy Terraform; this will make it easier to find all of the resources you need to manually get rid of first. 
+It'll also help to make sure no one is updating your configuration by accident. 
+
+---
+
 This is a simple walkthrough to help you get started writing AWS Lambda Functions (Serverless Applications). It begins with a simple, barebones function and grows difficult until you've eventually implemented the final project. Example code snippets are provided for all of the steps needed to complete the final project, but the provided snippets are for AWS CLI commands. Part One of this walkthrough contains the following sections:
 - Writing Your First Lambda Function
 - Running Functions
@@ -124,6 +138,8 @@ Also, consider, as you go through this guide, there are plenty of opportunities 
 5. SSH Key-Pair configured to connecting to provisioned Jump-Host from Terraform. Private key should have perms set to 0600 using `chmod`
 6. A clean fresh copy of the .zip archive you found this README.md that contains the boiler-plate files you'll be using to build lambda functions. 
 
+### MacOSX use is fine, just make sure you have Rsync installed on your local machine and everything else was done. 
+
 ## Connecting and Syncing Files
 
 You'll need to be able to connect to the Jump-Host (EC2 Instance) to complete this project. Ensure the configured private key is locked down appropriately and the public key is on the upstream machine.
@@ -151,14 +167,23 @@ This will let you upload a local directory to the destination path on your jump-
 ### Downloading from the Jump Host
 
 ```bash
-rsync -avz -e "<path_to_ssh_private_key>"
-ec2-user@<jump-host>:<remote_directory_path> <local_target_directory>
+rsync -avz -e "ssh -i <path_to_ssh_private_key>" ec2-user@<jump-host>:<remote_directory_path> <local_target_directory>
 ```
 This will let you download your remote directory from the jump host to the specified local directory.
 
 It's important to remember that Rsync only sends the difference of the files, so it is efficient over network resources. And for whatever reason, if a transfer fails, re-running the same command will resume the file syncing between local and remote machines where it left off.
 
 ###
+
+## Configure AWS credentials in EC2 
+You'll need to configure your AWS credentials in the EC2 instance. 
+```bash
+aws configure
+```
+when prompted you'll enter the following:
+ - AWS Key : You'll have gotten this from Professor Chadwick to do earlier assignments
+ - Region  : us-east-1
+ - Output  : json
 
 ## Writing Your First Lambda Function
 For extra information on Lambda Functions you can [click here](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html) to see more.  
@@ -219,11 +244,14 @@ In this example, JSON is already part of the standard Python distribution for th
 If it doesn't exist, create a directory on your local machine to store the lambda function after copying the Python source file.
 ```bash
 mkdir HelloLambda;
-cp hello_lambda.py ./HelloLambda; 
-zip -r HelloLambda.zip ./HelloLambda
+cp hello_lambda.py ./HelloLambda;
+cd HelloLambda;
+zip -r ../HelloLambda.zip ./*
 ```
 
 You should now, have a zip file named `HelloLambda.zip`, or whatever you decided to name it. Go ahead and upload that to the directory you're working out of on your jump-host
+Typically we create a working folder, put our dependencies and source file inside it. Change directories into that working folder. And create a zip archive of everything inside. 
+Don't zip the folder, but the contents of the folder. 
 ```bash
 rsync -avz -e "~/.ssh/<private-key>" ./HelloLambda.zip ec2-user@<ip-addr>:<where-ever_youre_working_out_of>/HelloLambda.zip
 ```
@@ -569,8 +597,8 @@ We need to modify the inbound traffic rules for the RDS Security Group
 aws ec2 authorize-security-group-ingress \
 --group-id [RDS Security Group ID] \
 --protocol tcp \
---port 5432
---source-group [Lambda Function Security Group ID]
+--port 5432 \
+--cidr [Lambda Security Group CIDR]
 ```
 This allows Lambda Functions in the Lambda-Security-Group with the Lambda-Security-Group ID to send data to the RDS instance. From the perspective of PostgreSQL, we're allowing only TCP traffic on Port 5432 from Lambda Functions that use the Security Group ID we specify.
 
@@ -579,8 +607,8 @@ Not all situations always call for this; however, if we need RDS to send informa
 aws ec2 authorize-security-group-egress \
 --group-id [RDS Security Group ID] \
 --protocol tcp \
---port 5432
---destination-group [Lambda Security Group ID]
+--port 5432 \
+--cidr [Lambda Security Group CIDR]
 ```
 
 Once you've updated the configuration for the LambdaPortCheck function, reinvoke it, and you should see in the CloudWatch Logs that it's logging that Port 5432 on your RDS instance is Open!
@@ -816,7 +844,8 @@ aws s3api put-bucket-notification-configuration \
 
 ### Configuring for execution in the VPC 
 
-If you have done the previous section, you can mainly copy and paste the configuration steps you performed when Associating the Lambda function to the VPC, in addition to setting up the Lambda Security Group and then updating the inbound and outbound rules for TCP on port 5432 for Lambda and RDS security groups to refer to each other.
+If you have done the previous section, you can mainly copy and paste the configuration steps you performed when Associating the Lambda function to the VPC, in addition to setting up the Lambda Security Group and then updating the inbound and outbound rules for TCP on port 5432 for Lambda and RDS security groups to refer to each other. In other words, from the previous section just reuse the same security group with the altered ingress and egress rules and save yourself some tying. 
+For anyone who just skipped over the first two sections of the guide and went straight to the lambda project; run these commands. 
 
 Create your Lambda Function's Security Group:
 ```bash
@@ -834,7 +863,7 @@ Allow Lambda ingress on RDS over TCP using Port 5432
 aws ec2 authorize-security-group-ingress \
 --group-id [RDS Security Group ID] \
 --protocol tcp \
---port 5432
+--port 5432 \
 --source-group [Lambda Function Security Group ID]
 ```
 
@@ -843,7 +872,7 @@ Allow RDS egress to Lambda over TCP using Port 5432
 aws ec2 authorize-security-group-egress \
 --group-id [RDS Security Group ID] \
 --protocol tcp \
---port 5432
+--port 5432 \
 --destination-group [Lambda Security Group ID]
 ```
 
@@ -906,9 +935,9 @@ The memory allocation is also tied to performance; moving to 512MB or 756MB may 
 Pay attention to the cloud watch logs to ensure your lambda function is behaving correctly and that you can see in the CloudWatch Logs if it's successfully connecting to your PostgreSQL instance in the VPC.
 ```bash
 aws logs describe-log-streams \
---log-group-name /aws/lambda/[YourLambdaFunctionName]
+--log-group-name /aws/lambda/[YourLambdaFunctionName] \
 --order-by LastEventTime \
---descending
+--descending \
 --limit 1
 ```
 
@@ -930,7 +959,7 @@ Don't worry if you can't get it working, however. If your lambda function upsert
 
 Once you have your lambda function tested, it's working. Download your working function from the Jump-Host using rsync:
 ```bash
-rsync -avz -e "~/.ssh/<private_key>" ec2-user@<jump_host>:/path/to/your/lambda/function/archive.zip ~/some/path/where/you/want/it.zip
+rsync -avz -e "ssh -i ~/.ssh/<private_key>" ec2-user@<jump_host>:/path/to/your/lambda/function/archive.zip ~/some/path/where/you/want/it.zip
 ```
 This will be part of your deliverables that Professor Chadwick wants. 
 
@@ -939,8 +968,12 @@ We need to delete lambda functions manually before we can have Terraform destroy
 ```bash
 aws lambda delete-function \
 > --function-name [Your-Lambda-Function] \
-> --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
 ```
+You'll do that for: 
+ - What you named the Hello Lambda function if you did that
+ - Whatever you called the Lambda Function we made to go over the RDS Port Check using a Lambda Function configured for the VPC.
+ - And what you called the Lambda Function that represents the Final Lab for this class. 
+
 Once you're completely done with this project, go ahead and use Terraform to delete your VPC Infrastructure that was used for this project. 
 
 ---
