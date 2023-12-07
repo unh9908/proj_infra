@@ -71,6 +71,7 @@ conda --version
 ```
 
 - Create conda environment using the env.yml from the project root directory, you need to copy the env.yml file to jump server or create one and paste the content then run commad to create conda env is "conda env create -f path to env.yml file"
+- Configure your aws credentials on jump-server ec2 instance before you begin execution of lambda function
 
 # AWS Tutorial with Boto3, AWS CLI, and Python
 
